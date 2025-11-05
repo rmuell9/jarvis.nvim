@@ -148,7 +148,7 @@ function M.handle_openai_spec_data(data_stream)
   end
 end
 
-local group = vim.api.nvim_create_augroup('DING_LLM_AutoGroup', { clear = true })
+local group = vim.api.nvim_create_augroup('JARV_LLM_AutoGroup', { clear = true })
 local active_job = nil
 
 function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_data_fn)
@@ -191,7 +191,7 @@ function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_dat
 
   vim.api.nvim_create_autocmd('User', {
     group = group,
-    pattern = 'DING_LLM_Escape',
+    pattern = 'JARV_LLM_Escape',
     callback = function()
       if active_job then
         active_job:shutdown()
@@ -201,7 +201,7 @@ function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_dat
     end,
   })
 
-  vim.api.nvim_set_keymap('n', '<Esc>', ':doautocmd User DING_LLM_Escape<CR>', { noremap = true, silent = true })
+  vim.api.nvim_set_keymap('n', '<Esc>', ':doautocmd User JARV_LLM_Escape<CR>', { noremap = true, silent = true })
   return active_job
 end
 
