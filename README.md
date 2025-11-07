@@ -14,7 +14,7 @@ return {
         local system_prompt =
         'Replace the selected text/code as if you were actually writing it - so no markdown formatting.'
 
-        local helpful_prompt = 'You are the all-knowing oracle who makes no mistakes and is always consise.'
+        local helpful_prompt = 'You are the all-knowing oracle who makes no mistakes and is always concise.'
 
         local jarvis = require 'jarvis'
 
