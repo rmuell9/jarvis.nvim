@@ -45,7 +45,9 @@ function M.get_visual_selection()
       scol, ecol = ecol, scol
     end
     for i = srow, erow do
-      table.insert(lines, vim.api.nvim_buf_get_text(0, i - 1, math.min(scol - 1, ecol), i - 1, math.max(scol - 1, ecol), {})[1])
+      table.insert(lines, 
+        vim.api.nvim_buf_get_text(0, i - 1, math.min(scol - 1, ecol), i - 1, 
+          math.max(scol - 1, ecol), {})[1])
     end
     return lines
   end
@@ -61,7 +63,8 @@ function M.make_anthropic_spec_curl_args(opts, prompt, system_prompt)
     stream = true,
     max_tokens = 4096,
   }
-  local args = { '-N', '-X', 'POST', '-H', 'Content-Type: application/json', '-d', vim.json.encode(data) }
+  local args = { '-N', '-X', 'POST', '-H', 'Content-Type: application/json', 
+    '-d', vim.json.encode(data) }
   if api_key then
     table.insert(args, '-H')
     table.insert(args, 'x-api-key: ' .. api_key)
@@ -76,12 +79,14 @@ function M.make_openai_spec_curl_args(opts, prompt, system_prompt)
   local url = opts.url
   local api_key = opts.api_key_name and get_api_key(opts.api_key_name)
   local data = {
-    messages = { { role = 'system', content = system_prompt }, { role = 'user', content = prompt } },
+    messages = { { role = 'system', content = system_prompt }, 
+      { role = 'user', content = prompt } },
     model = opts.model,
     temperature = 0.7,
     stream = true,
   }
-  local args = { '-N', '-X', 'POST', '-H', 'Content-Type: application/json', '-d', vim.json.encode(data) }
+  local args = { '-N', '-X', 'POST', '-H', 'Content-Type: application/json', 
+    '-d', vim.json.encode(data) }
   if api_key then
     table.insert(args, '-H')
     table.insert(args, 'Authorization: Bearer ' .. api_key)
@@ -90,7 +95,17 @@ function M.make_openai_spec_curl_args(opts, prompt, system_prompt)
   return args
 end
 
-function M.write_string_at_cursor(str)
+local write_queue = {}
+local write_in_progress = false
+
+local function process_write_queue()
+  if write_in_progress or #write_queue == 0 then
+    return
+  end
+  
+  write_in_progress = true
+  local str = table.remove(write_queue, 1)
+  
   vim.schedule(function()
     local current_window = vim.api.nvim_get_current_win()
     local cursor_position = vim.api.nvim_win_get_cursor(current_window)
@@ -98,13 +113,22 @@ function M.write_string_at_cursor(str)
 
     local lines = vim.split(str, '\n')
 
-    vim.cmd("undojoin")
+    pcall(vim.cmd, "undojoin")
     vim.api.nvim_put(lines, 'c', true, true)
 
     local num_lines = #lines
     local last_line_length = #lines[num_lines]
-    vim.api.nvim_win_set_cursor(current_window, { row + num_lines - 1, col + last_line_length })
+    vim.api.nvim_win_set_cursor(current_window, 
+      { row + num_lines - 1, col + last_line_length })
+    
+    write_in_progress = false
+    process_write_queue()
   end)
+end
+
+function M.write_string_at_cursor(str)
+  table.insert(write_queue, str)
+  process_write_queue()
 end
 
 local function get_prompt(opts)
@@ -118,7 +142,8 @@ local function get_prompt(opts)
       vim.api.nvim_command 'normal! d'
       vim.api.nvim_command 'normal! k'
     else
-      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', false, true, true), 'nx', false)
+      vim.api.nvim_feedkeys(
+        vim.api.nvim_replace_termcodes('<Esc>', false, true, true), 'nx', false)
     end
   else
     prompt = M.get_lines_until_cursor()
@@ -153,8 +178,12 @@ local active_job = nil
 
 function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_data_fn)
   vim.api.nvim_clear_autocmds { group = group }
+  write_queue = {}
+  write_in_progress = false
   local prompt = get_prompt(opts)
-  local system_prompt = opts.system_prompt or 'You are a tsundere uwu anime. Yell at me for not setting my configuration for my llm plugin correctly'
+  local system_prompt = opts.system_prompt or 
+    'You are a helpful assistant. Yell at me for not setting my ' ..
+    'configuration for my llm plugin correctly'
   local args = make_curl_args_fn(opts, prompt, system_prompt)
   local curr_event_state = nil
 
@@ -201,7 +230,8 @@ function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_dat
     end,
   })
 
-  vim.api.nvim_set_keymap('n', '<Esc>', ':doautocmd User JARV_LLM_Escape<CR>', { noremap = true, silent = true })
+  vim.api.nvim_set_keymap('n', '<Esc>', ':doautocmd User JARV_LLM_Escape<CR>', 
+    { noremap = true, silent = true })
   return active_job
 end
 
