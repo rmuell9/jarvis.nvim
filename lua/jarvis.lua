@@ -176,7 +176,12 @@ end
 local group = vim.api.nvim_create_augroup('JARV_LLM_AutoGroup', { clear = true })
 local active_job = nil
 
-function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_data_fn)
+local indent_instruction = 
+  ' When writing, always wrap lines at 80 characters by continuing ' ..
+  'on the next line with appropriate indentation.'
+
+function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, 
+    handle_data_fn)
   vim.api.nvim_clear_autocmds { group = group }
   write_queue = {}
   write_in_progress = false
@@ -184,6 +189,7 @@ function M.invoke_llm_and_stream_into_editor(opts, make_curl_args_fn, handle_dat
   local system_prompt = opts.system_prompt or 
     'You are a helpful assistant. Yell at me for not setting my ' ..
     'configuration for my llm plugin correctly'
+  system_prompt = system_prompt .. indent_instruction
   local args = make_curl_args_fn(opts, prompt, system_prompt)
   local curr_event_state = nil
 
